@@ -8,6 +8,7 @@ import dev.langchain4j.model.input.structured.StructuredPrompt;
 import dev.langchain4j.model.moderation.ModerationModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiModerationModel;
+import dev.langchain4j.model.output.TokenUsage;
 import dev.langchain4j.model.output.structured.Description;
 import lombok.Builder;
 import lombok.ToString;
@@ -228,8 +229,8 @@ public class AiServicesIT {
                         "\"address\": (type: dev.langchain4j.service.AiServicesIT$Address: {\n" +
                         "\"streetNumber\": (type: integer),\n" +
                         "\"street\": (type: string),\n" +
-                        "\"city\": (type: string),\n" +
-                        "}),\n" +
+                        "\"city\": (type: string)\n" +
+                        "})\n" +
                         "}")));
     }
 
@@ -275,8 +276,8 @@ public class AiServicesIT {
                         "\"address\": (type: dev.langchain4j.service.AiServicesIT$Address: {\n" +
                         "\"streetNumber\": (type: integer),\n" +
                         "\"street\": (type: string),\n" +
-                        "\"city\": (type: string),\n" +
-                        "}),\n" +
+                        "\"city\": (type: string)\n" +
+                        "})\n" +
                         "}")));
     }
 
@@ -327,7 +328,7 @@ public class AiServicesIT {
                         "\"title\": (type: string),\n" +
                         "\"description\": (type: string),\n" +
                         "\"steps\": (each step should be described in 4 words, steps should rhyme; type: array of string),\n" +
-                        "\"preparationTimeMinutes\": (type: integer),\n" +
+                        "\"preparationTimeMinutes\": (type: integer)\n" +
                         "}")));
     }
 
@@ -350,35 +351,46 @@ public class AiServicesIT {
                         "\"title\": (type: string),\n" +
                         "\"description\": (type: string),\n" +
                         "\"steps\": (each step should be described in 4 words, steps should rhyme; type: array of string),\n" +
-                        "\"preparationTimeMinutes\": (type: integer),\n" +
+                        "\"preparationTimeMinutes\": (type: integer)\n" +
                         "}")));
     }
 
     interface BadChef {
-        public static final String CHEFS_PROMPT_DOES_NOT_EXIST_TXT = "chefs-prompt-does-not-exist.txt";
-        public static final String CHEFS_PROMPT_IS_EMPTY_TXT = "chefs-prompt-is-empty.txt";
+        String CHEFS_PROMPT_DOES_NOT_EXIST_TXT = "chefs-prompt-does-not-exist.txt";
 
-        @UserMessage(fromResource = CHEFS_PROMPT_DOES_NOT_EXIST_TXT)
-        Recipe createRecipeFromNonExistingResource(String... ingredients);
+        @UserMessage(fromResource = "chefs-prompt-does-not-exist.txt")
+        Recipe createRecipeWithNonExistingResource(String... ingredients);
 
-        @UserMessage(fromResource = CHEFS_PROMPT_IS_EMPTY_TXT)
-        Recipe createRecipeFromEmptyResource(String... ingredients);
+        @UserMessage(fromResource = "chefs-prompt-is-empty.txt")
+        Recipe createRecipeWithEmptyResource(String... ingredients);
+
+        @UserMessage(fromResource = "chefs-prompt-is-blank.txt")
+        Recipe createRecipeWithBlankResource(String... ingredients);
     }
 
     @Test
-    void test_call_model_with_missing_resource() {
+    void should_fail_when_user_message_resource_is_not_found() {
         BadChef badChef = AiServices.create(BadChef.class, chatLanguageModel);
 
-        assertThatThrownBy(() -> badChef.createRecipeFromNonExistingResource("cucumber", "tomato", "feta", "onion", "olives"))
+        assertThatThrownBy(() -> badChef.createRecipeWithNonExistingResource("cucumber", "tomato", "feta", "onion", "olives"))
                 .isInstanceOf(IllegalConfigurationException.class)
                 .hasMessage("@UserMessage's resource '" + BadChef.CHEFS_PROMPT_DOES_NOT_EXIST_TXT + "' not found");
     }
 
     @Test
-    void test_call_model_with_empty_resource() {
+    void should_fail_when_user_message_resource_is_empty() {
         BadChef badChef = AiServices.create(BadChef.class, chatLanguageModel);
 
-        assertThatThrownBy(() -> badChef.createRecipeFromEmptyResource("cucumber", "tomato", "feta", "onion", "olives"))
+        assertThatThrownBy(() -> badChef.createRecipeWithEmptyResource("cucumber", "tomato", "feta", "onion", "olives"))
+                .isInstanceOf(IllegalConfigurationException.class)
+                .hasMessage("@UserMessage's template cannot be empty");
+    }
+
+    @Test
+    void should_fail_when_user_message_resource_is_blank() {
+        BadChef badChef = AiServices.create(BadChef.class, chatLanguageModel);
+
+        assertThatThrownBy(() -> badChef.createRecipeWithBlankResource("cucumber", "tomato", "feta", "onion", "olives"))
                 .isInstanceOf(IllegalConfigurationException.class)
                 .hasMessage("@UserMessage's template cannot be empty");
     }
@@ -415,7 +427,7 @@ public class AiServicesIT {
                         "\"title\": (type: string),\n" +
                         "\"description\": (type: string),\n" +
                         "\"steps\": (each step should be described in 4 words, steps should rhyme; type: array of string),\n" +
-                        "\"preparationTimeMinutes\": (type: integer),\n" +
+                        "\"preparationTimeMinutes\": (type: integer)\n" +
                         "}")));
     }
 
@@ -445,7 +457,7 @@ public class AiServicesIT {
                         "\"title\": (type: string),\n" +
                         "\"description\": (type: string),\n" +
                         "\"steps\": (each step should be described in 4 words, steps should rhyme; type: array of string),\n" +
-                        "\"preparationTimeMinutes\": (type: integer),\n" +
+                        "\"preparationTimeMinutes\": (type: integer)\n" +
                         "}")
         ));
     }
@@ -476,7 +488,7 @@ public class AiServicesIT {
                         "\"title\": (type: string),\n" +
                         "\"description\": (type: string),\n" +
                         "\"steps\": (each step should be described in 4 words, steps should rhyme; type: array of string),\n" +
-                        "\"preparationTimeMinutes\": (type: integer),\n" +
+                        "\"preparationTimeMinutes\": (type: integer)\n" +
                         "}")
         ));
     }
@@ -598,5 +610,92 @@ public class AiServicesIT {
 
         verify(chatLanguageModel).generate(singletonList(userMessage(message)));
         verify(moderationModel).moderate(singletonList(userMessage(message)));
+    }
+
+
+    interface AssistantReturningResult {
+
+        Result<String> chat(String userMessage);
+    }
+
+    @Test
+    void should_return_result() {
+
+        // given
+        AssistantReturningResult assistant = AiServices.create(AssistantReturningResult.class, chatLanguageModel);
+
+        String userMessage = "What is the capital of Germany?";
+
+        // when
+        Result<String> result = assistant.chat(userMessage);
+
+        // then
+        assertThat(result.content()).containsIgnoringCase("Berlin");
+
+        TokenUsage tokenUsage = result.tokenUsage();
+        assertThat(tokenUsage).isNotNull();
+        assertThat(tokenUsage.inputTokenCount()).isGreaterThan(0);
+        assertThat(tokenUsage.outputTokenCount()).isGreaterThan(0);
+        assertThat(tokenUsage.totalTokenCount())
+                .isEqualTo(tokenUsage.inputTokenCount() + tokenUsage.outputTokenCount());
+
+        assertThat(result.sources()).isNull();
+
+        verify(chatLanguageModel).generate(singletonList(userMessage(userMessage)));
+    }
+
+
+    interface AssistantReturningResultWithPojo {
+
+        Result<Booking> answer(String query);
+    }
+
+    static class Booking {
+
+        String userId;
+        String bookingId;
+    }
+
+    @Test
+    void should_use_content_retriever_and_return_sources_inside_result_with_pojo() {
+
+        // given
+        AssistantReturningResultWithPojo assistant = AiServices.create(AssistantReturningResultWithPojo.class, chatLanguageModel);
+
+        // when
+        Result<Booking> result = assistant.answer("Give me an example of a booking");
+
+        // then
+        Booking booking = result.content();
+        assertThat(booking.userId).isNotBlank();
+        assertThat(booking.bookingId).isNotBlank();
+
+        assertThat(result.tokenUsage()).isNotNull();
+        assertThat(result.sources()).isNull();
+
+        verify(chatLanguageModel).generate(singletonList(
+                userMessage("Give me an example of a booking\n" +
+                        "You must answer strictly in the following JSON format: {\n" +
+                        "\"userId\": (type: string),\n" +
+                        "\"bookingId\": (type: string)\n" +
+                        "}")
+        ));
+    }
+
+
+    interface InvalidAssistantWithResult {
+
+        Result answerWithNoGenericType(String query);
+    }
+
+    @Test
+    void should_throw_exception_when_retrieve_sources_and_generic_type_is_not_set() {
+
+        // when-then
+        assertThatThrownBy(() ->
+                AiServices.create(InvalidAssistantWithResult.class, chatLanguageModel))
+                .isExactlyInstanceOf(IllegalArgumentException.class)
+                .hasMessage("The return type 'Result' of the method 'answerWithNoGenericType' must be " +
+                        "parameterized with a type, for example: Result<String> or Result<MyCustomPojo>");
     }
 }
